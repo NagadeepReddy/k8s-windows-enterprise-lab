@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "enterprise-app.fullname" . }}
+  labels:
+    {{- include "enterprise-app.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "enterprise-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "enterprise-app.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: app-sa
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+      containers:
+      - name: enterprise-container
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 80
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 10 }}
+        volumeMounts:
+        - name: app-data
+          mountPath: "C:\inetpub\wwwroot"
+      volumes:
+      - name: app-data
+        persistentVolumeClaim:
+          claimName: {{ ternary "windows-app-pvc-longhorn" "windows-app-pvc" .Values.volume.useLonghorn }}

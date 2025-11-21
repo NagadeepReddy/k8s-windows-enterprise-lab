@@ -1,0 +1,37 @@
+name: Build and Deploy Windows Enterprise App
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Log in to container registry
+      if: env.REGISTRY != ''
+      run: |
+        echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login $Env:REGISTRY -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+
+    - name: Build Windows image
+      run: |
+        docker build -t $Env:IMAGE_REPOSITORY:$Env:IMAGE_TAG --isolation=process .
+        docker push $Env:IMAGE_REPOSITORY:$Env:IMAGE_TAG
+      env:
+        IMAGE_REPOSITORY: mcr.microsoft.com/windows/servercore/iis
+        IMAGE_TAG: windowsservercore-ltsc2022
+
+    - name: Install kubectl
+      run: choco install kubernetes-cli -y
+
+    - name: Install Helm
+      run: choco install kubernetes-helm -y
+
+    - name: Deploy with Helm
+      run: |
+        helm dependency update .\helm\enterprise-app
+        helm upgrade --install enterprise .\helm\enterprise-app -n apps --create-namespace

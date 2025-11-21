@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: windows-enterprise-ingress
+  namespace: apps
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: enterprise.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: windows-enterprise-svc
+            port:
+              number: 80

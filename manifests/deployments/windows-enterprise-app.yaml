@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: windows-enterprise-app
+  namespace: apps
+  labels:
+    app: windows-enterprise-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: windows-enterprise-app
+  template:
+    metadata:
+      labels:
+        app: windows-enterprise-app
+    spec:
+      serviceAccountName: app-sa
+      nodeSelector:
+        kubernetes.io/os: windows
+      tolerations:
+      - key: "node.kubernetes.io/os"
+        operator: "Equal"
+        value: "windows"
+        effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "kubernetes.io/os"
+                operator: In
+                values:
+                - windows
+      containers:
+      - name: windows-enterprise-container
+        image: mcr.microsoft.com/windows/servercore/iis:windowsservercore-ltsc2022
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 20
+        volumeMounts:
+        - name: app-data
+          mountPath: "C:\inetpub\wwwroot"
+      volumes:
+      - name: app-data
+        persistentVolumeClaim:
+          claimName: windows-app-pvc

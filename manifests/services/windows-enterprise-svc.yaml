@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: windows-enterprise-svc
+  namespace: apps
+  labels:
+    app: windows-enterprise-app
+spec:
+  type: ClusterIP
+  selector:
+    app: windows-enterprise-app
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http

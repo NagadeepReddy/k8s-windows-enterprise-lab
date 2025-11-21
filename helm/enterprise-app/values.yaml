@@ -1,0 +1,91 @@
+
+# Windows nodes may require compatible CNIs (Flannel / OVN-K). Not all Linux CNIs support Windows.
+# Replica settings for the Windows enterprise app
+replicaCount: 2
+
+image:
+  # Windows-compatible base image for this demo.
+  # Replace this with your own Windows app image in real clusters.
+  repository: mcr.microsoft.com/windows/servercore/iis
+  tag: "windowsservercore-ltsc2022"
+  pullPolicy: IfNotPresent
+  os: windows
+
+service:
+  type: ClusterIP   # Change to NodePort/LoadBalancer if needed in real clusters.
+  port: 80
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: enterprise.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+# Baseline resource requests/limits to avoid noisy-neighbor issues.
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+# Probes tuned for a simple IIS-style app. Adjust for your real endpoints.
+livenessProbe:
+  httpGet:
+    path: /
+    port: 80
+  initialDelaySeconds: 30
+  periodSeconds: 20
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 80
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+# Enable this if deploying to a Windows node pool.
+nodeSelector:
+  kubernetes.io/os: windows
+
+# Example toleration for Windows-tainted pools.
+tolerations:
+  - key: "node.kubernetes.io/os"
+    operator: "Equal"
+    value: "windows"
+    effect: "NoSchedule"
+
+# Required node affinity so we never accidentally land on Linux nodes.
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: "kubernetes.io/os"
+          operator: In
+          values:
+          - windows
+
+volume:
+  enabled: true
+  # false -> hostPath/local-path PVC (lab); true -> Longhorn PVC (enterprise-style).
+  useLonghorn: false
+  storageClassName: local-path
+  size: 1Gi
+
+hpa:
+  enabled: false    # Turn this on only after Windows metrics pipeline is validated.
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 60
+
+monitoring:
+  windowsExporter:
+    enabled: false
+    repository: mcr.microsoft.com/windows/nanoserver/windows-exporter
+    tag: "latest"
+    port: 9182
