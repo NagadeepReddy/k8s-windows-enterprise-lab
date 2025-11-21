@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: windows-exporter
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: windows-exporter
+  template:
+    metadata:
+      labels:
+        app: windows-exporter
+    spec:
+      nodeSelector:
+        kubernetes.io/os: windows
+      containers:
+      - name: windows-exporter
+        image: ghcr.io/prometheus-community/windows-exporter:latest
+        ports:
+        - containerPort: 9182
