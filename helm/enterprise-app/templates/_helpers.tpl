@@ -9,7 +9,6 @@ Generate the fullname for resources
 {{- end -}}
 {{- end }}
 
-
 {{/*
 Common labels
 */}}
