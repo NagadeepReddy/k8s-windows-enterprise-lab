@@ -185,7 +185,7 @@ This keeps the chart realistic and production‑shaped, but still simple enough 
 
 ---
 
-## 7. Troubleshooting Windows Nodes (What I’d Say in a Review)
+## 7. Troubleshooting Windows Nodes
 
 A few real‑world things I call out when discussing Windows Kubernetes:
 
